@@ -189,3 +189,49 @@ if __name__=="__main__":
 		port=5000,
 		debug=True
 	)
+@app.route("/create",methods=["GET","POST"])
+@login_required
+def create():
+
+	if request.method=="POST":
+
+		name=request.form["name"]
+
+		file=request.files["file"]
+
+		filename=""
+
+		if file:
+
+			filename=secure_filename(
+				file.filename
+			)
+
+			file.save(
+				"uploads/"+filename
+			)
+
+
+		project=Project(
+
+			name=name,
+
+			file=filename,
+
+			status="Uploaded",
+
+			user_id=current_user.id
+		)
+
+
+		db.session.add(project)
+
+		db.session.commit()
+
+
+		return redirect("/dashboard")
+
+
+	return render_template(
+		"create.html"
+	)
