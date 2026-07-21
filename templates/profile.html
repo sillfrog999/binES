@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Profile</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<nav>
+<h2>binES</h2>
+<a href="/dashboard">Dashboard</a>
+</nav>
+
+
+<div class="container">
+
+<div class="profile">
+
+<h1>
+{{current_user.username}}
+</h1>
+
+
+<img class="avatar"
+src="/uploads/{{current_user.avatar}}">
+
+
+<form method="post" action="/avatar" enctype="multipart/form-data">
+
+<input type="file" name="avatar">
+
+<button>
+Upload Avatar
+</button>
+
+</form>
+
+
+</div>
+
+</div>
+
+
+</body>
+</html>
