@@ -1,0 +1,42 @@
+body{
+
+	background:#111827;
+
+	color:white;
+
+	font-family:Arial;
+
+	text-align:center;
+
+	padding:50px;
+
+}
+
+
+a{
+
+	color:#38bdf8;
+
+	font-size:20px;
+
+	margin:10px;
+
+}
+
+
+input{
+
+	padding:10px;
+
+	margin:5px;
+
+}
+
+
+button{
+
+	padding:10px 25px;
+
+	cursor:pointer;
+
+}
