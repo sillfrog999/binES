@@ -11,18 +11,37 @@
 </head>
 
 
+
 <body>
 
 
 <nav>
 
-<h2>binES</h2>
+
+<h2>
+binES
+</h2>
+
+
+<div>
+
+
+<a href="/profile">
+Profile
+</a>
+
 
 <a href="/logout">
 Logout
 </a>
 
+
+</div>
+
+
 </nav>
+
+
 
 
 
@@ -35,64 +54,153 @@ Dashboard
 
 
 <p>
-Welcome {{current_user.username}}
+Welcome 
+<b>
+{{current_user.username}}
+</b>
 </p>
 
 
 
+
 <a class="btn" href="/create">
+
 + New Project
+
 </a>
+
+
+
 
 
 
 <div class="projects">
 
 
+
+{% if projects %}
+
+
+
 {% for p in projects %}
+
+
+
+<div class="card">
+
+
+
+<a href="/project/{{p.id}}"
+style="text-decoration:none;color:white;">
+
+
+<h2>
+
+{{p.name}}
+
+</h2>
+
+
+</a>
+
+
+
+
+<p>
+
+Status:
+
+<span class="status">
+
+{{p.status}}
+
+</span>
+
+
+</p>
+
+
+
+
+
+<p>
+
+File:
+
+{{p.file}}
+
+</p>
+
+
+
+
+
+
+<a class="btn"
+href="/project/{{p.id}}">
+
+Open
+
+</a>
+
+
+
+
+
+<a class="delete"
+href="/delete/{{p.id}}">
+
+Delete
+
+</a>
+
+
+
+
+</div>
+
+
+
+{% endfor %}
+
+
+
+
+{% else %}
 
 
 <div class="card">
 
 
 <h2>
-{{p.name}}
+No projects
 </h2>
 
 
 <p>
-Status:
-<span class="status">
-{{p.status}}
-</span>
+Create your first project with binES
 </p>
 
 
-<p>
-File:
-{{p.file}}
-</p>
+</div>
 
 
 
-<a class="delete"
-href="/delete/{{p.id}}">
-Delete
-</a>
+{% endif %}
+
+
+
 
 
 </div>
 
 
-{% endfor %}
-
 
 </div>
 
-
-</div>
 
 
 </body>
+
 
 </html>
