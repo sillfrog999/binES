@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<link rel="stylesheet" href="/static/style.css">
+
+<script src="/static/deploy.js"></script>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+<h1>
+{{project.name}}
+</h1>
+
+
+<h3>
+Status:
+{{project.status}}
+</h3>
+
+
+<a class="btn"
+href="/download/{{project.file}}">
+Download Source
+</a>
+
+
+
+<form action="/deploy/{{project.id}}"
+method="post">
+
+
+<button onclick="loading()">
+
+Deploy
+
+</button>
+
+
+</form>
+
+
+
+<div class="log">
+
+
+<h2>
+Build Log
+</h2>
+
+
+<pre>
+
+{{project.log}}
+
+</pre>
+
+
+</div>
+
+
+</div>
+
+
+</body>
+
+</html>
