@@ -235,3 +235,18 @@ def create():
 	return render_template(
 		"create.html"
 	)
+@app.route("/delete/<int:id>")
+@login_required
+def delete(id):
+
+	project=Project.query.get(id)
+
+
+	if project:
+
+		db.session.delete(project)
+
+		db.session.commit()
+
+
+	return redirect("/dashboard")
