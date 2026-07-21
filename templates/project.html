@@ -1,20 +1,28 @@
 <!DOCTYPE html>
-
 <html>
 
 <head>
-
+<title>{{project.name}}</title>
 <link rel="stylesheet" href="/static/style.css">
-
-<script src="/static/deploy.js"></script>
-
 </head>
-
 
 <body>
 
+<nav>
+
+<h2>binES</h2>
+
+<a href="/dashboard">
+Dashboard
+</a>
+
+</nav>
+
 
 <div class="container">
+
+
+<div class="card">
 
 
 <h1>
@@ -22,10 +30,20 @@
 </h1>
 
 
-<h3>
+<p>
 Status:
+<span class="status">
 {{project.status}}
-</h3>
+</span>
+</p>
+
+
+<div class="file">
+
+File:
+{{project.file}}
+
+</div>
 
 
 <a class="btn"
@@ -34,43 +52,32 @@ Download Source
 </a>
 
 
-
-<form action="/deploy/{{project.id}}"
-method="post">
+<br>
 
 
-<button onclick="loading()">
-
+<a class="btn"
+href="/deploy/{{project.id}}">
 Deploy
-
-</button>
-
-
-</form>
-
+</a>
 
 
 <div class="log">
-
 
 <h2>
 Build Log
 </h2>
 
-
 <pre>
-
 {{project.log}}
-
 </pre>
 
-
 </div>
 
 
 </div>
 
+
+</div>
 
 </body>
-
 </html>
