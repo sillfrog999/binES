@@ -1,11 +1,19 @@
 import os
+
 from werkzeug.utils import secure_filename
+
 from flask import Flask,render_template,redirect,request
+
 from flask_sqlalchemy import SQLAlchemy
+
 from flask_login import LoginManager,UserMixin,login_user,logout_user,current_user,login_required
+
 from werkzeug.security import generate_password_hash,check_password_hash
 
+
+
 app=Flask(__name__)
+
 
 app.config["SECRET_KEY"]="bines"
 
@@ -13,6 +21,7 @@ app.config["SQLALCHEMY_DATABASE_URI"]="sqlite:///bines.db"
 
 
 db=SQLAlchemy(app)
+
 
 
 login=LoginManager()
@@ -23,6 +32,18 @@ login.login_view="login"
 
 
 
+UPLOAD_FOLDER="uploads"
+
+app.config["UPLOAD_FOLDER"]=UPLOAD_FOLDER
+
+
+if not os.path.exists(UPLOAD_FOLDER):
+
+	os.makedirs(UPLOAD_FOLDER)
+
+
+
+
 class User(db.Model,UserMixin):
 
 	id=db.Column(
@@ -30,14 +51,19 @@ class User(db.Model,UserMixin):
 		primary_key=True
 	)
 
+
 	username=db.Column(
 		db.String(50),
 		unique=True
 	)
 
+
 	password=db.Column(
 		db.String(200)
 	)
+
+
+
 
 class Project(db.Model):
 
@@ -46,26 +72,35 @@ class Project(db.Model):
 		primary_key=True
 	)
 
+
 	name=db.Column(
 		db.String(100)
 	)
+
 
 	file=db.Column(
 		db.String(200)
 	)
 
+
 	status=db.Column(
 		db.String(50)
 	)
+
 
 	user_id=db.Column(
 		db.Integer
 	)
 
+
+
+
 @login.user_loader
 def load_user(id):
 
 	return User.query.get(int(id))
+
+
 
 
 
@@ -78,6 +113,8 @@ def home():
 
 
 
+
+
 @app.route(
 	"/register",
 	methods=["GET","POST"]
@@ -85,17 +122,41 @@ def home():
 
 def register():
 
+
 	if request.method=="POST":
+
 
 		username=request.form["username"]
 
 		password=request.form["password"]
 
 
+
+		check=User.query.filter_by(
+			username=username
+		).first()
+
+
+
+		if check:
+
+
+			return render_template(
+				"register.html",
+				error="Username da ton tai!"
+			)
+
+
+
+
 		user=User(
+
 			username=username,
+
 			password=generate_password_hash(password)
+
 		)
+
 
 
 		db.session.add(user)
@@ -103,12 +164,18 @@ def register():
 		db.session.commit()
 
 
+
 		return redirect("/login")
+
 
 
 	return render_template(
 		"register.html"
 	)
+
+
+
+
 
 
 
@@ -122,9 +189,11 @@ def login():
 
 	if request.method=="POST":
 
+
 		username=request.form["username"]
 
 		password=request.form["password"]
+
 
 
 		user=User.query.filter_by(
@@ -140,6 +209,7 @@ def login():
 
 			login_user(user)
 
+
 			return redirect(
 				"/dashboard"
 			)
@@ -152,22 +222,39 @@ def login():
 
 
 
+
+
+
+
+
 @app.route("/logout")
+
 def logout():
 
+
 	logout_user()
+
 
 	return redirect("/")
 
 
 
+
+
+
+
+
 @app.route("/dashboard")
+
 @login_required
+
 def dashboard():
+
 
 	projects=Project.query.filter_by(
 		user_id=current_user.id
 	).all()
+
 
 
 	return render_template(
@@ -177,39 +264,52 @@ def dashboard():
 
 
 
-with app.app_context():
-
-	db.create_all()
 
 
-if __name__=="__main__":
 
-	app.run(
-		host="0.0.0.0",
-		port=5000,
-		debug=True
-	)
-@app.route("/create",methods=["GET","POST"])
+
+
+@app.route(
+	"/create",
+	methods=["GET","POST"]
+)
+
 @login_required
+
 def create():
+
 
 	if request.method=="POST":
 
+
 		name=request.form["name"]
+
 
 		file=request.files["file"]
 
+
 		filename=""
 
-		if file:
+
+
+		if file and file.filename:
+
 
 			filename=secure_filename(
 				file.filename
 			)
 
+
+
 			file.save(
-				"uploads/"+filename
+				os.path.join(
+					app.config["UPLOAD_FOLDER"],
+					filename
+				)
 			)
+
+
+
 
 
 		project=Project(
@@ -221,7 +321,10 @@ def create():
 			status="Uploaded",
 
 			user_id=current_user.id
+
 		)
+
+
 
 
 		db.session.add(project)
@@ -229,24 +332,72 @@ def create():
 		db.session.commit()
 
 
+
 		return redirect("/dashboard")
+
 
 
 	return render_template(
 		"create.html"
 	)
-@app.route("/delete/<int:id>")
+
+
+
+
+
+
+
+
+@app.route(
+	"/delete/<int:id>",
+	methods=["GET"]
+)
+
 @login_required
+
 def delete(id):
+
 
 	project=Project.query.get(id)
 
 
+
 	if project:
+
 
 		db.session.delete(project)
 
 		db.session.commit()
 
 
+
 	return redirect("/dashboard")
+
+
+
+
+
+
+
+
+
+with app.app_context():
+
+	db.create_all()
+
+
+
+
+
+if __name__=="__main__":
+
+
+	app.run(
+
+		host="0.0.0.0",
+
+		port=5000,
+
+		debug=True
+
+	)
