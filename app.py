@@ -1,8 +1,9 @@
+import os
+from werkzeug.utils import secure_filename
 from flask import Flask,render_template,redirect,request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager,UserMixin,login_user,logout_user,current_user,login_required
 from werkzeug.security import generate_password_hash,check_password_hash
-
 
 app=Flask(__name__)
 
@@ -38,7 +39,28 @@ class User(db.Model,UserMixin):
 		db.String(200)
 	)
 
+class Project(db.Model):
 
+	id=db.Column(
+		db.Integer,
+		primary_key=True
+	)
+
+	name=db.Column(
+		db.String(100)
+	)
+
+	file=db.Column(
+		db.String(200)
+	)
+
+	status=db.Column(
+		db.String(50)
+	)
+
+	user_id=db.Column(
+		db.Integer
+	)
 
 @login.user_loader
 def load_user(id):
@@ -143,8 +165,14 @@ def logout():
 @login_required
 def dashboard():
 
+	projects=Project.query.filter_by(
+		user_id=current_user.id
+	).all()
+
+
 	return render_template(
-		"dashboard.html"
+		"dashboard.html",
+		projects=projects
 	)
 
 
