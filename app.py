@@ -2,7 +2,7 @@ import os
 
 from werkzeug.utils import secure_filename
 
-from flask import Flask,render_template,redirect,request
+from flask import Flask,render_template,redirect,request,send_from_directory
 
 from flask_sqlalchemy import SQLAlchemy
 
@@ -18,6 +18,7 @@ app=Flask(__name__)
 app.config["SECRET_KEY"]="bines"
 
 app.config["SQLALCHEMY_DATABASE_URI"]="sqlite:///bines.db"
+
 
 
 db=SQLAlchemy(app)
@@ -37,9 +38,11 @@ UPLOAD_FOLDER="uploads"
 app.config["UPLOAD_FOLDER"]=UPLOAD_FOLDER
 
 
+
 if not os.path.exists(UPLOAD_FOLDER):
 
 	os.makedirs(UPLOAD_FOLDER)
+
 
 
 
@@ -51,16 +54,20 @@ class User(db.Model,UserMixin):
 		primary_key=True
 	)
 
-
 	username=db.Column(
 		db.String(50),
 		unique=True
 	)
 
-
 	password=db.Column(
 		db.String(200)
 	)
+
+	avatar=db.Column(
+		db.String(200),
+		default="default.png"
+	)
+
 
 
 
@@ -72,25 +79,26 @@ class Project(db.Model):
 		primary_key=True
 	)
 
-
 	name=db.Column(
 		db.String(100)
 	)
-
 
 	file=db.Column(
 		db.String(200)
 	)
 
-
 	status=db.Column(
 		db.String(50)
 	)
 
+	log=db.Column(
+		db.Text
+	)
 
 	user_id=db.Column(
 		db.Integer
 	)
+
 
 
 
@@ -115,21 +123,14 @@ def home():
 
 
 
-@app.route(
-	"/register",
-	methods=["GET","POST"]
-)
-
+@app.route("/register",methods=["GET","POST"])
 def register():
 
-
 	if request.method=="POST":
-
 
 		username=request.form["username"]
 
 		password=request.form["password"]
-
 
 
 		check=User.query.filter_by(
@@ -137,15 +138,12 @@ def register():
 		).first()
 
 
-
 		if check:
-
 
 			return render_template(
 				"register.html",
 				error="Username da ton tai!"
 			)
-
 
 
 
@@ -158,15 +156,12 @@ def register():
 		)
 
 
-
 		db.session.add(user)
 
 		db.session.commit()
 
 
-
 		return redirect("/login")
-
 
 
 	return render_template(
@@ -177,18 +172,10 @@ def register():
 
 
 
-
-
-@app.route(
-	"/login",
-	methods=["GET","POST"]
-)
-
+@app.route("/login",methods=["GET","POST"])
 def login():
 
-
 	if request.method=="POST":
-
 
 		username=request.form["username"]
 
@@ -209,10 +196,7 @@ def login():
 
 			login_user(user)
 
-
-			return redirect(
-				"/dashboard"
-			)
+			return redirect("/dashboard")
 
 
 
@@ -224,16 +208,10 @@ def login():
 
 
 
-
-
-
 @app.route("/logout")
-
 def logout():
 
-
 	logout_user()
-
 
 	return redirect("/")
 
@@ -241,20 +219,13 @@ def logout():
 
 
 
-
-
-
 @app.route("/dashboard")
-
 @login_required
-
 def dashboard():
-
 
 	projects=Project.query.filter_by(
 		user_id=current_user.id
 	).all()
-
 
 
 	return render_template(
@@ -266,30 +237,64 @@ def dashboard():
 
 
 
-
-
-
-@app.route(
-	"/create",
-	methods=["GET","POST"]
-)
-
+@app.route("/profile")
 @login_required
+def profile():
 
+	return render_template(
+		"profile.html"
+	)
+
+
+
+
+
+@app.route("/avatar",methods=["POST"])
+@login_required
+def avatar():
+
+	file=request.files["avatar"]
+
+
+	if file and file.filename:
+
+		filename=secure_filename(
+			file.filename
+		)
+
+
+		file.save(
+			os.path.join(
+				UPLOAD_FOLDER,
+				filename
+			)
+		)
+
+
+		current_user.avatar=filename
+
+		db.session.commit()
+
+
+
+	return redirect("/profile")
+
+
+
+
+
+@app.route("/create",methods=["GET","POST"])
+@login_required
 def create():
-
 
 	if request.method=="POST":
 
-
 		name=request.form["name"]
-
 
 		file=request.files["file"]
 
 
 		filename=""
-
 
 
 		if file and file.filename:
@@ -300,15 +305,12 @@ def create():
 			)
 
 
-
 			file.save(
 				os.path.join(
-					app.config["UPLOAD_FOLDER"],
+					UPLOAD_FOLDER,
 					filename
 				)
 			)
-
-
 
 
 
@@ -320,17 +322,17 @@ def create():
 
 			status="Uploaded",
 
+			log="Project created",
+
 			user_id=current_user.id
 
 		)
 
 
 
-
 		db.session.add(project)
 
 		db.session.commit()
-
 
 
 		return redirect("/dashboard")
@@ -345,25 +347,80 @@ def create():
 
 
 
-
-
-
-@app.route(
-	"/delete/<int:id>",
-	methods=["GET"]
-)
-
+@app.route("/project/<int:id>")
 @login_required
-
-def delete(id):
-
+def project(id):
 
 	project=Project.query.get(id)
 
 
+	return render_template(
+		"project.html",
+		project=project
+	)
+
+
+
+
+
+@app.route("/download/<filename>")
+@login_required
+def download(filename):
+
+	return send_from_directory(
+		UPLOAD_FOLDER,
+		filename,
+		as_attachment=True
+	)
+
+
+
+
+
+@app.route("/deploy/<int:id>")
+@login_required
+def deploy(id):
+
+	project=Project.query.get(id)
+
+
+	project.status="Deploy Success"
+
+
+	project.log="""
+[binES Deploy]
+
+Checking source...
+
+Installing packages...
+
+Building project...
+
+Starting server...
+
+Deploy completed successfully!
+"""
+
+
+	db.session.commit()
+
+
+	return redirect(
+		"/project/"+str(id)
+	)
+
+
+
+
+
+@app.route("/delete/<int:id>")
+@login_required
+def delete(id):
+
+	project=Project.query.get(id)
+
 
 	if project:
-
 
 		db.session.delete(project)
 
@@ -372,10 +429,6 @@ def delete(id):
 
 
 	return redirect("/dashboard")
-
-
-
-
 
 
 
@@ -391,13 +444,8 @@ with app.app_context():
 
 if __name__=="__main__":
 
-
 	app.run(
-
 		host="0.0.0.0",
-
 		port=5000,
-
 		debug=True
-
 	)
