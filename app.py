@@ -2,13 +2,15 @@ import os
 
 from werkzeug.utils import secure_filename
 
-from flask import Flask,render_template,redirect,request,send_from_directory
+from flask import Flask,render_template,redirect,request,send_from_directory,url_for
 
 from flask_sqlalchemy import SQLAlchemy
 
 from flask_login import LoginManager,UserMixin,login_user,logout_user,current_user,login_required
 
 from werkzeug.security import generate_password_hash,check_password_hash
+
+from authlib.integrations.flask_client import OAuth
 
 
 
@@ -17,16 +19,24 @@ app=Flask(__name__)
 
 app.config["SECRET_KEY"]="bines"
 
-database_url=os.environ.get("DATABASE_URL")
+
+
+database_url=os.environ.get(
+	"DATABASE_URL"
+)
+
 
 if database_url:
+
 	database_url=database_url.replace(
 		"postgres://",
 		"postgresql://",
 		1
 	)
 
+
 app.config["SQLALCHEMY_DATABASE_URI"]=database_url
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"]=False
 
 
@@ -43,15 +53,40 @@ login.login_view="login"
 
 
 
+oauth=OAuth(app)
+
+
+github=oauth.register(
+	name="github",
+	client_id=os.environ.get(
+		"GITHUB_CLIENT_ID"
+	),
+	client_secret=os.environ.get(
+		"GITHUB_CLIENT_SECRET"
+	),
+	access_token_url="https://github.com/login/oauth/access_token",
+	authorize_url="https://github.com/login/oauth/authorize",
+	api_base_url="https://api.github.com/",
+	client_kwargs={
+		"scope":"user:email"
+	}
+)
+
+
+
 UPLOAD_FOLDER="uploads"
 
 app.config["UPLOAD_FOLDER"]=UPLOAD_FOLDER
 
 
 
-if not os.path.exists(UPLOAD_FOLDER):
+if not os.path.exists(
+	UPLOAD_FOLDER
+):
 
-	os.makedirs(UPLOAD_FOLDER)
+	os.makedirs(
+		UPLOAD_FOLDER
+	)
 
 
 
@@ -97,6 +132,10 @@ class Project(db.Model):
 		db.String(200)
 	)
 
+	github=db.Column(
+		db.String(300)
+	)
+
 	status=db.Column(
 		db.String(50)
 	)
@@ -116,7 +155,9 @@ class Project(db.Model):
 @login.user_loader
 def load_user(id):
 
-	return User.query.get(int(id))
+	return User.query.get(
+		int(id)
+	)
 
 
 
@@ -133,7 +174,11 @@ def home():
 
 
 
-@app.route("/register",methods=["GET","POST"])
+@app.route(
+	"/register",
+	methods=["GET","POST"]
+)
+
 def register():
 
 	if request.method=="POST":
@@ -161,17 +206,23 @@ def register():
 
 			username=username,
 
-			password=generate_password_hash(password)
+			password=generate_password_hash(
+				password
+			)
 
 		)
 
 
-		db.session.add(user)
+		db.session.add(
+			user
+		)
 
 		db.session.commit()
 
 
-		return redirect("/login")
+		return redirect(
+			"/login"
+		)
 
 
 	return render_template(
@@ -182,7 +233,11 @@ def register():
 
 
 
-@app.route("/login",methods=["GET","POST"])
+@app.route(
+	"/login",
+	methods=["GET","POST"]
+)
+
 def login():
 
 	if request.method=="POST":
@@ -190,7 +245,6 @@ def login():
 		username=request.form["username"]
 
 		password=request.form["password"]
-
 
 
 		user=User.query.filter_by(
@@ -204,9 +258,13 @@ def login():
 			password
 		):
 
-			login_user(user)
+			login_user(
+				user
+			)
 
-			return redirect("/dashboard")
+			return redirect(
+				"/dashboard"
+			)
 
 
 
@@ -218,7 +276,84 @@ def login():
 
 
 
+@app.route(
+	"/github/login"
+)
+
+def github_login():
+
+	return github.authorize_redirect(
+		url_for(
+			"github_callback",
+			_external=True
+		)
+	)
+
+
+
+
+
+@app.route(
+	"/github/callback"
+)
+
+def github_callback():
+
+	token=github.authorize_access_token()
+
+
+	info=github.get(
+		"user"
+	).json()
+
+
+	username=info["login"]
+
+
+
+	user=User.query.filter_by(
+		username=username
+	).first()
+
+
+
+	if not user:
+
+
+		user=User(
+
+			username=username,
+
+			password=generate_password_hash(
+				"github"
+			)
+
+		)
+
+
+		db.session.add(
+			user
+		)
+
+		db.session.commit()
+
+
+
+	login_user(
+		user
+	)
+
+
+	return redirect(
+		"/dashboard"
+	)
+
+
+
+
+
 @app.route("/logout")
+
 def logout():
 
 	logout_user()
@@ -230,7 +365,9 @@ def logout():
 
 
 @app.route("/dashboard")
+
 @login_required
+
 def dashboard():
 
 	projects=Project.query.filter_by(
@@ -248,7 +385,9 @@ def dashboard():
 
 
 @app.route("/profile")
+
 @login_required
+
 def profile():
 
 	return render_template(
@@ -259,47 +398,22 @@ def profile():
 
 
 
-@app.route("/avatar",methods=["POST"])
+@app.route(
+	"/create",
+	methods=["GET","POST"]
+)
+
 @login_required
-def avatar():
 
-	file=request.files["avatar"]
-
-
-	if file and file.filename:
-
-		filename=secure_filename(
-			file.filename
-		)
-
-
-		file.save(
-			os.path.join(
-				UPLOAD_FOLDER,
-				filename
-			)
-		)
-
-
-		current_user.avatar=filename
-
-		db.session.commit()
-
-
-
-	return redirect("/profile")
-
-
-
-
-
-@app.route("/create",methods=["GET","POST"])
-@login_required
 def create():
 
 	if request.method=="POST":
 
+
 		name=request.form["name"]
+
+		github=request.form["github"]
+
 
 		file=request.files["file"]
 
@@ -330,6 +444,8 @@ def create():
 
 			file=filename,
 
+			github=github,
+
 			status="Uploaded",
 
 			log="Project created",
@@ -340,12 +456,17 @@ def create():
 
 
 
-		db.session.add(project)
+		db.session.add(
+			project
+		)
 
 		db.session.commit()
 
 
-		return redirect("/dashboard")
+
+		return redirect(
+			"/dashboard"
+		)
 
 
 
@@ -357,11 +478,17 @@ def create():
 
 
 
-@app.route("/project/<int:id>")
+@app.route(
+	"/project/<int:id>"
+)
+
 @login_required
+
 def project(id):
 
-	project=Project.query.get(id)
+	project=Project.query.get(
+		id
+	)
 
 
 	return render_template(
@@ -373,8 +500,12 @@ def project(id):
 
 
 
-@app.route("/download/<filename>")
+@app.route(
+	"/download/<filename>"
+)
+
 @login_required
+
 def download(filename):
 
 	return send_from_directory(
@@ -387,11 +518,17 @@ def download(filename):
 
 
 
-@app.route("/deploy/<int:id>")
+@app.route(
+	"/deploy/<int:id>"
+)
+
 @login_required
+
 def deploy(id):
 
-	project=Project.query.get(id)
+	project=Project.query.get(
+		id
+	)
 
 
 	project.status="Deploy Success"
@@ -423,22 +560,32 @@ Deploy completed successfully!
 
 
 
-@app.route("/delete/<int:id>")
+@app.route(
+	"/delete/<int:id>"
+)
+
 @login_required
+
 def delete(id):
 
-	project=Project.query.get(id)
+	project=Project.query.get(
+		id
+	)
 
 
 	if project:
 
-		db.session.delete(project)
+		db.session.delete(
+			project
+		)
 
 		db.session.commit()
 
 
 
-	return redirect("/dashboard")
+	return redirect(
+		"/dashboard"
+	)
 
 
 
