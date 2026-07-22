@@ -2,37 +2,80 @@
 <html>
 
 <head>
-<title>Create Project</title>
+
+<title>Create Project - binES</title>
+
 <link rel="stylesheet" href="/static/style.css">
+
 </head>
+
 
 <body>
 
+
 <nav>
-<h2>binES</h2>
-<a href="/dashboard">Dashboard</a>
+
+<h2>
+binES
+</h2>
+
+
+<a href="/dashboard">
+Dashboard
+</a>
+
 </nav>
 
 
+
 <div class="box">
+
 
 <h1>
 New Project
 </h1>
 
+
+
 <form method="post" enctype="multipart/form-data">
 
-<input name="name" placeholder="Project name" required>
 
-<input type="file" name="file">
+
+<input
+name="name"
+placeholder="Project name"
+required
+>
+
+
+
+<input
+name="github"
+placeholder="Github Repository URL"
+>
+
+
+
+<input
+type="file"
+name="file"
+>
+
+
 
 <button>
-Create
+Create Project
 </button>
+
+
 
 </form>
 
+
+
 </div>
 
+
 </body>
+
 </html>
