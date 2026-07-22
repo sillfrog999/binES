@@ -2,5 +2,7 @@ Flask
 Flask-SQLAlchemy
 Flask-Login
 gunicorn
-Werkzeug
 psycopg2-binary
+werkzeug
+Authlib
+requests
